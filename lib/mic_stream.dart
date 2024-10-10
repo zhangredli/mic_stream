@@ -63,31 +63,37 @@ class MicStream {
   /// The actual sample rate used for streaming. Only completes once a stream started.
   static Future<int> get sampleRate async {
     _memoisedSampleRate ??= await _microphoneFuture.then((_) {
-      return _microphoneMethodChannel.invokeMethod("getSampleRate")
+      return _microphoneMethodChannel
+          .invokeMethod("getSampleRate")
           .then((value) => (value as double).toInt());
     });
     return _memoisedSampleRate!;
   }
+
   static int? _memoisedSampleRate;
 
   /// The actual bit depth used for streaming. Only completes once a stream started.
   static Future<int> get bitDepth async {
     _memoisedBitDepth = await _microphoneFuture.then((_) {
-      return _microphoneMethodChannel.invokeMethod("getBitDepth")
+      return _microphoneMethodChannel
+          .invokeMethod("getBitDepth")
           .then((value) => value as int);
     });
     return _memoisedBitDepth!;
   }
+
   static int? _memoisedBitDepth;
 
   /// The amount of recorded data, per sample, in bytes. Only completes once a stream started.
   static Future<int> get bufferSize async {
     _memoisedBufferSize ??= await _microphoneFuture.then((_) {
-      return _microphoneMethodChannel.invokeMethod("getBufferSize")
+      return _microphoneMethodChannel
+          .invokeMethod("getBufferSize")
           .then((value) => value as int);
     });
     return _memoisedBufferSize!;
   }
+
   static int? _memoisedBufferSize;
 
   /// The configured microphone stream
@@ -142,21 +148,12 @@ class MicStream {
       return Stream.error(
           RangeError.range(sampleRate, _MIN_SAMPLE_RATE, _MAX_SAMPLE_RATE));
 
-    final permissionStatus = _requestPermission
-        ? Stream.fromFuture(MicStream.permissionStatus)
-        : Stream.value(true);
-
-    return permissionStatus.asyncExpand((grantedPermission) {
-      if (!grantedPermission) {
-        throw Exception('Microphone permission is not granted');
-      }
-      return _setupMicStream(
-        audioSource!,
-        sampleRate!,
-        channelConfig!,
-        audioFormat!,
-      );
-    });
+    return _setupMicStream(
+      audioSource,
+      sampleRate,
+      channelConfig,
+      audioFormat,
+    );
   }
 
   static Stream<Uint8List> _setupMicStream(
@@ -170,7 +167,6 @@ class MicStream {
         sampleRate != __sampleRate ||
         channelConfig != __channelConfig ||
         audioFormat != __audioFormat) {
-
       // Reset runtime values
       if (_microphone != null) {
         var _tmpCompleter = _microphoneCompleter;
@@ -193,11 +189,11 @@ class MicStream {
         sampleRate,
         channelConfig == ChannelConfig.CHANNEL_IN_MONO ? 16 : 12,
         switch (audioFormat) {
-        AudioFormat.ENCODING_PCM_8BIT => 3,
-        AudioFormat.ENCODING_PCM_16BIT => 2,
+          AudioFormat.ENCODING_PCM_8BIT => 3,
+          AudioFormat.ENCODING_PCM_16BIT => 2,
 //      AudioFormat.ENCODING_PCM_24BIT_PACKED => 21,
-        AudioFormat.ENCODING_PCM_32BIT => 22,
-        AudioFormat.ENCODING_PCM_FLOAT => 4
+          AudioFormat.ENCODING_PCM_32BIT => 22,
+          AudioFormat.ENCODING_PCM_FLOAT => 4
         }
       ]).cast<Uint8List>();
     }
@@ -228,42 +224,58 @@ class MicStream {
       // TODO: check bitDepth here already and call different handlers for every possible combination
       (__channelConfig == ChannelConfig.CHANNEL_IN_MONO)
           ? new StreamTransformer.fromHandlers(handleData: _expandUint8ListMono)
-          : new StreamTransformer.fromHandlers(handleData: _expandUint8ListStereo);
+          : new StreamTransformer.fromHandlers(
+              handleData: _expandUint8ListStereo);
 
   static void _expandUint8ListMono(Uint8List raw, EventSink sink) async {
     switch (await bitDepth) {
-      case 8: raw.buffer.asInt8List().forEach(sink.add); break;
-      case 16: raw.buffer.asInt16List().forEach(sink.add); break;
-      case 24: sink.addError("24 bit PCM encoding is not supported"); break;
-      case 32: (__audioFormat == AudioFormat.ENCODING_PCM_32BIT)
-          ? raw.buffer.asInt32List().forEach(sink.add)
-          : raw.buffer.asFloat32List().forEach(sink.add);
+      case 8:
+        raw.buffer.asInt8List().forEach(sink.add);
+        break;
+      case 16:
+        raw.buffer.asInt16List().forEach(sink.add);
+        break;
+      case 24:
+        sink.addError("24 bit PCM encoding is not supported");
+        break;
+      case 32:
+        (__audioFormat == AudioFormat.ENCODING_PCM_32BIT)
+            ? raw.buffer.asInt32List().forEach(sink.add)
+            : raw.buffer.asFloat32List().forEach(sink.add);
         break;
       default:
         sink.addError("No stream configured yet");
     }
   }
+
   static void _expandUint8ListStereo(Uint8List raw, EventSink sink) async {
     switch (await bitDepth) {
-      case 8: _listToPairList(raw.buffer.asInt8List()).forEach(sink.add); break;
-      case 16: _listToPairList(raw.buffer.asInt16List()).forEach(sink.add); break;
-      case 24: sink.addError("24 bit PCM encoding is not supported"); break;
-      case 32: (__audioFormat == AudioFormat.ENCODING_PCM_32BIT)
-          ? _listToPairList(raw.buffer.asInt32List()).forEach(sink.add)
-          : _listToPairList(raw.buffer.asFloat32List()).forEach(sink.add);
-      break;
+      case 8:
+        _listToPairList(raw.buffer.asInt8List()).forEach(sink.add);
+        break;
+      case 16:
+        _listToPairList(raw.buffer.asInt16List()).forEach(sink.add);
+        break;
+      case 24:
+        sink.addError("24 bit PCM encoding is not supported");
+        break;
+      case 32:
+        (__audioFormat == AudioFormat.ENCODING_PCM_32BIT)
+            ? _listToPairList(raw.buffer.asInt32List()).forEach(sink.add)
+            : _listToPairList(raw.buffer.asFloat32List()).forEach(sink.add);
+        break;
       default:
         sink.addError("No stream configured yet");
     }
   }
+
   static List<(num, num)> _listToPairList(List<num> mono) {
     List<(num, num)> stereo = List.empty(growable: true);
     num? first;
     for (num sample in mono) {
       if (first == null) {
         first = sample;
-      }
-      else {
+      } else {
         stereo.add((first, sample));
         first = null;
       }

@@ -41,7 +41,7 @@ public class MicStreamPlugin implements FlutterPlugin, EventChannel.StreamHandle
     /// Cleanup after connection loss to flutter
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        onCancel(null);
+        //onCancel(null);
     }
 
     /// Deprecated way of registering plugin
