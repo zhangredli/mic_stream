@@ -61,7 +61,7 @@ public class MicStreamPlugin implements FlutterPlugin, EventChannel.StreamHandle
     // Audio recorder + initial values
     private static volatile AudioRecord recorder = null;
 
-    private int AUDIO_SOURCE = MediaRecorder.AudioSource.DEFAULT;
+    private int AUDIO_SOURCE = MediaRecorder.AudioSource.MIC;
     private int SAMPLE_RATE = 16000;
     private int actualSampleRate;
     private int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
